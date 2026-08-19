@@ -158,6 +158,8 @@ export interface CognitiveExerciseDef {
   name: string;
   instructions: string;
   durationSeconds: number;
+  type?: string;
+  category?: string;
 }
 
 export interface CognitiveResult {
@@ -167,6 +169,8 @@ export interface CognitiveResult {
   avgReactionTimeMs: number;
   accuracyPct: number;
   completed: boolean;
+  exerciseType?: string;
+  metrics?: Record<string, number | string | null>;
 }
 
 export interface CognitiveSessionSummary {
@@ -175,6 +179,37 @@ export interface CognitiveSessionSummary {
   date: string;
   domainScores: Record<CognitiveDomain, number>;
   results: CognitiveResult[];
+}
+
+// ---------------------------------------------------------------------------
+// Speech Assessment
+// ---------------------------------------------------------------------------
+
+export type SpeechAssessmentState = "IDLE" | "REQUESTING_MICROPHONE" | "RECORDING" | "PROCESSING" | "COMPLETED" | "ERROR";
+
+export interface SpeechSegment {
+  startMs: number;
+  endMs: number;
+}
+
+export interface SpeechAssessmentResult {
+  patientId: string;
+  assessmentDuration: number;
+  wordsSpoken: number;
+  totalWords: number;
+  speechRateWpm: number | null;
+  articulationRate: number | null;
+  speakingTimeSeconds: number | null;
+  totalPauseTimeSeconds: number | null;
+  pauseCount: number | null;
+  averagePauseSeconds: number | null;
+  longestPauseSeconds: number | null;
+  jitter: number | null;
+  shimmer: number | null;
+  fundamentalFrequency: number | null;
+  fluencyScore: number | null;
+  transcript: string;
+  completedAt: string;
 }
 
 // ---------------------------------------------------------------------------

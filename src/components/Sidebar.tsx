@@ -6,12 +6,14 @@ import {
   GitCompareArrows,
   ShieldCheck,
   Brain,
+  AudioLines,
   FileText,
   Bell,
   Settings,
   HelpCircle,
   Activity,
 } from "lucide-react";
+import { USE_REAL_MRI_AI } from "@/services/mriService";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -20,6 +22,7 @@ const navItems = [
   { to: "/longitudinal", label: "Longitudinal", icon: GitCompareArrows },
   { to: "/evidence", label: "Clinical Evidence", icon: ShieldCheck },
   { to: "/cognitive", label: "Cognitive Assessment", icon: Brain },
+  { to: "/speech", label: "Speech Assessment", icon: AudioLines },
   { to: "/reports", label: "Reports", icon: FileText },
   { to: "/notifications", label: "Notifications", icon: Bell },
   { to: "/settings", label: "Settings", icon: Settings },
@@ -27,6 +30,9 @@ const navItems = [
 ];
 
 export function Sidebar() {
+  const modelStatusClass = USE_REAL_MRI_AI ? "bg-stable" : "bg-warn";
+  const modelStatusText = USE_REAL_MRI_AI ? "Segmentation model configured" : "Segmentation model URL missing";
+
   return (
     <aside className="w-60 shrink-0 border-r border-border bg-surface hidden md:flex md:flex-col h-screen sticky top-0">
       <div className="flex items-center gap-2 px-5 h-16 border-b border-border">
@@ -57,7 +63,7 @@ export function Sidebar() {
       <div className="p-3 border-t border-border text-[11px] text-ink-faint leading-snug">
         <p className="font-medium text-ink-muted">Model status</p>
         <p className="flex items-center gap-1.5 mt-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-stable inline-block" /> Segmentation model connected
+          <span className={`w-1.5 h-1.5 rounded-full inline-block ${modelStatusClass}`} /> {modelStatusText}
         </p>
         <p className="flex items-center gap-1.5 mt-1">
           <span className="w-1.5 h-1.5 rounded-full bg-stable inline-block" /> LLM connected

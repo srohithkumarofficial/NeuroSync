@@ -1,14 +1,16 @@
 from functools import lru_cache
+from pathlib import Path
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    mongodb_uri: str = "mongodb://localhost:27017"
+    mongodb_uri: str = Field(default="mongodb://localhost:27017", validation_alias=AliasChoices("MONGODB_URI", "MONGO_URI"))
     database_name: str = "neurosync"
     frontend_url: str = "http://localhost:5173"
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=Path(__file__).resolve().parents[1] / ".env", extra="ignore")
 
     @property
     def cors_origins(self) -> list[str]:

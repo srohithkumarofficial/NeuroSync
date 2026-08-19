@@ -69,6 +69,8 @@ class CognitiveResult(APIModel):
     avgReactionTimeMs: float = Field(ge=0, le=120000)
     accuracyPct: float = Field(ge=0, le=100)
     completed: bool
+    exerciseType: str | None = None
+    metrics: dict[str, float | int | str | None] = Field(default_factory=dict)
 
 
 class CognitiveSessionCreate(APIModel):

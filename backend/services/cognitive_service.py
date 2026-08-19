@@ -57,7 +57,7 @@ def submit_session(payload: CognitiveSessionCreate) -> CognitiveSessionResponse:
         corrected = result.model_copy(update={"score": server_score})
         normalized.append(corrected)
         scores[corrected.domain].append(server_score)
-        db.attempts.insert_one({"_id": f"att-{uuid4().hex}", "user_id": payload.patient_id, "exercise_id": corrected.exerciseId, "exercise_type": "supervised_reaction", "category": corrected.domain, "difficulty": "medium", "answer": None, "correct": corrected.accuracyPct >= 70, "score": server_score, "response_time": corrected.avgReactionTimeMs / 1000, "attempt_number": 1, "created_at": _now()})
+        db.attempts.insert_one({"_id": f"att-{uuid4().hex}", "user_id": payload.patient_id, "exercise_id": corrected.exerciseId, "exercise_type": corrected.exerciseType or "supervised_cognitive", "category": corrected.domain, "difficulty": "medium", "answer": None, "correct": corrected.accuracyPct >= 70, "score": server_score, "response_time": corrected.avgReactionTimeMs / 1000, "metrics": corrected.metrics, "attempt_number": 1, "created_at": _now()})
     domains = ["attention", "processing_speed", "memory", "cognitive_flexibility"]
     domain_scores = {domain: round(sum(scores[domain]) / len(scores[domain]), 2) if scores[domain] else 0.0 for domain in domains}
     session = {"_id": f"cs-{uuid4().hex}", "patientId": payload.patient_id, "date": _now(), "domainScores": domain_scores, "results": [item.model_dump() for item in normalized]}

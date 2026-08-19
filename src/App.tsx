@@ -11,6 +11,7 @@ import { MRIResults } from "@/pages/MRIResults";
 import { LongitudinalComparison } from "@/pages/LongitudinalComparison";
 import { ClinicalEvidence } from "@/pages/ClinicalEvidence";
 import { CognitiveAssessment } from "@/pages/CognitiveAssessment";
+import { SpeechAssessment } from "@/pages/SpeechAssessment";
 import { Reports } from "@/pages/Reports";
 import { Notifications } from "@/pages/Notifications";
 import { Settings } from "@/pages/Settings";
@@ -43,6 +44,7 @@ function AppRoutes() {
         <Route path="/longitudinal" element={<LongitudinalComparison />} />
         <Route path="/evidence" element={<ClinicalEvidence />} />
         <Route path="/cognitive" element={<CognitiveAssessment />} />
+        <Route path="/speech" element={<SpeechAssessment />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/settings" element={<Settings />} />

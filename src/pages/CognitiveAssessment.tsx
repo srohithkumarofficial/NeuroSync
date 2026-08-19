@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Patient, CognitiveExerciseDef, CognitiveResult, CognitiveDomain, CognitiveSessionSummary } from "@/types";
 import { patientService } from "@/services/patientService";
 import { cognitiveService } from "@/services/cognitiveService";
@@ -14,6 +14,7 @@ const domainLabels: Record<CognitiveDomain, string> = {
   memory: "Memory",
   cognitive_flexibility: "Cognitive flexibility",
 };
+const domainOrder: CognitiveDomain[] = ["attention", "processing_speed", "memory", "cognitive_flexibility"];
 
 type Mode = "select" | "running" | "complete";
 
@@ -44,7 +45,10 @@ export function CognitiveAssessment() {
   }
 
   function startSession() {
-    const queue = exercises.filter((e) => selectedDomains.includes(e.domain));
+    const queue = domainOrder
+      .filter((domain) => selectedDomains.includes(domain))
+      .map((domain) => exercises.find((exercise) => exercise.domain === domain))
+      .filter((exercise): exercise is CognitiveExerciseDef => Boolean(exercise));
     if (queue.length === 0) return;
     setExerciseQueue(queue);
     setExerciseIndex(0);
@@ -68,7 +72,7 @@ export function CognitiveAssessment() {
     const exercise = exerciseQueue[exerciseIndex];
     return (
       <div className="max-w-xl mx-auto">
-        <p className="text-center text-xs text-ink-faint mb-2">Exercise {exerciseIndex + 1} of {exerciseQueue.length} · Supervised session</p>
+        <p className="text-center text-xs text-ink-faint mb-2">Exercise {exerciseIndex + 1} of {exerciseQueue.length} Â· Supervised session</p>
         <CognitiveExerciseRunner exercise={exercise} onComplete={handleExerciseComplete} />
       </div>
     );
@@ -87,9 +91,21 @@ export function CognitiveAssessment() {
           <h3 className="text-sm font-semibold text-ink mb-3">Exercise detail</h3>
           <div className="space-y-2">
             {summary.results.map((r) => (
-              <div key={r.exerciseId} className="flex items-center justify-between text-sm border-b border-border last:border-0 pb-2 last:pb-0">
-                <span className="text-ink-muted capitalize">{r.domain.replace("_", " ")}</span>
-                <span className="mono-num text-ink">Score {r.score} · {r.avgReactionTimeMs}ms · {r.accuracyPct}% accuracy</span>
+              <div key={r.exerciseId} className="border-b border-border last:border-0 pb-3 last:pb-0">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-ink-muted capitalize">{r.domain.replace("_", " ")}</span>
+                  <span className="mono-num text-ink">Score {Math.round(r.score)} · {Math.round(r.accuracyPct)}% accuracy</span>
+                </div>
+                {r.metrics && Object.keys(r.metrics).length > 0 && (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs text-ink-faint">
+                    {Object.entries(r.metrics).map(([key, value]) => (
+                      <div key={key} className="flex justify-between gap-2">
+                        <span>{formatMetricLabel(key)}</span>
+                        <span className="mono-num text-ink-muted">{value === null ? "Unavailable" : value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -107,14 +123,14 @@ export function CognitiveAssessment() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-ink">Cognitive Assessment</h1>
-        <p className="text-sm text-ink-faint mt-0.5">Clinician-supervised practice and monitoring — not a diagnostic test</p>
+        <p className="text-sm text-ink-faint mt-0.5">Clinician-supervised practice and monitoring â€” not a diagnostic test</p>
       </div>
 
       <div className="panel p-5 space-y-5 max-w-2xl">
         <div>
           <label htmlFor="cog-patient" className="block text-sm font-medium text-ink-muted mb-1.5">Patient</label>
           <select id="cog-patient" value={selectedPatient} onChange={(e) => setSelectedPatient(e.target.value)} className="w-full border border-border rounded-sm px-3 py-2 text-sm">
-            <option value="">Select a patient…</option>
+            <option value="">Select a patientâ€¦</option>
             {patients.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.id})</option>)}
           </select>
         </div>
@@ -168,3 +184,8 @@ export function CognitiveAssessment() {
     </div>
   );
 }
+
+function formatMetricLabel(key: string): string {
+  return key.replace(/([A-Z])/g, " $1").replace(/Pct/g, "%").replace(/Ms/g, " ms").replace(/^./, (letter) => letter.toUpperCase());
+}
+

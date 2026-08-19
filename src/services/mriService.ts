@@ -2,8 +2,8 @@ import { MRIInferenceResult, MRIScanResult, MRISequence, ProcessingStep } from "
 import { mockScanResults } from "@/mock/mriScans";
 import { mockDelay, ApiError } from "./apiConfig";
 
-const MRI_AI_API_URL = import.meta.env.VITE_MRI_AI_API_URL?.replace(/\/$/, "");
-export const USE_REAL_MRI_AI = Boolean(MRI_AI_API_URL);
+export const MRI_AI_SERVICE_URL = (import.meta.env.VITE_MRI_AI_SERVICE_URL || import.meta.env.VITE_MRI_AI_API_URL || "").replace(/\/$/, "");
+export const USE_REAL_MRI_AI = Boolean(MRI_AI_SERVICE_URL);
 const REAL_INFERENCE_TIMEOUT_MS = 10 * 60 * 1000;
 const realResults = new Map<string, MRIInferenceResult>();
 
@@ -48,7 +48,8 @@ function parseInferenceResult(patientId: string, value: unknown): MRIInferenceRe
 export const mriService = {
   /** Sends the three real NIfTI volumes to the independently deployed nnU-Net service. */
   async runRealAnalysis(patientId: string, files: { t1: File; flair: File; t2: File }): Promise<MRIInferenceResult> {
-    if (!MRI_AI_API_URL) throw new ApiError("MRI AI service URL is not configured.", "AI_SERVICE_NOT_CONFIGURED", false);
+    if (!MRI_AI_SERVICE_URL) throw new ApiError("MRI AI service URL is not configured.", "AI_SERVICE_NOT_CONFIGURED", false);
+    if (!files.t1 || !files.flair || !files.t2) throw new ApiError("Missing T1, FLAIR, or T2 MRI input.", "MISSING_MRI_MODALITY", false);
     if (!Object.values(files).every(isNiftiFile)) throw new ApiError("Upload valid .nii or .nii.gz files for T1, FLAIR, and T2.", "INVALID_MRI_FILE", false);
     const formData = new FormData();
     formData.append("t1", files.t1);
@@ -57,16 +58,21 @@ export const mriService = {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), REAL_INFERENCE_TIMEOUT_MS);
     try {
-      const response = await fetch(`${MRI_AI_API_URL}/predict`, { method: "POST", body: formData, signal: controller.signal });
+      const response = await fetch(`${MRI_AI_SERVICE_URL}/predict`, { method: "POST", body: formData, signal: controller.signal });
       const body = await response.json().catch(() => null);
-      if (!response.ok) throw new ApiError(body?.detail || body?.message || "AI analysis service is currently unavailable.", "AI_SERVICE_ERROR", response.status >= 500);
+      if (!response.ok) {
+        if (import.meta.env.DEV) console.error("MRI AI service error", { status: response.status, body });
+        const message = response.status >= 500 ? "MRI AI service returned an error." : body?.detail || body?.message || "Invalid MRI files or request.";
+        throw new ApiError(message, "AI_SERVICE_ERROR", response.status >= 500);
+      }
       const result = parseInferenceResult(patientId, body);
       realResults.set(patientId, result);
       return result;
     } catch (error) {
       if (error instanceof ApiError) throw error;
+      if (import.meta.env.DEV) console.error("MRI AI request failed", error);
       if (error instanceof DOMException && error.name === "AbortError") throw new ApiError("AI analysis timed out. The service may still be processing; try again shortly.", "AI_TIMEOUT", true);
-      throw new ApiError("AI analysis service is currently unavailable. Check the temporary model service and try again.", "AI_SERVICE_UNAVAILABLE", true);
+      throw new ApiError("Unable to connect to MRI AI service. Check that the ngrok URL is current and CORS is enabled.", "AI_SERVICE_UNAVAILABLE", true);
     } finally {
       window.clearTimeout(timeout);
     }

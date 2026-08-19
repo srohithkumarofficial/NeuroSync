@@ -55,11 +55,10 @@ export const mockVerifiedClaims: Record<string, VerifiedClaim[]> = {
 };
 
 export const cognitiveExercises: CognitiveExerciseDef[] = [
-  { id: "ex-reaction", domain: "attention", name: "Reaction Time", instructions: "Tap the button as soon as the shape turns green.", durationSeconds: 60 },
-  { id: "ex-symbol", domain: "processing_speed", name: "Symbol Matching", instructions: "Match each symbol to its corresponding number as quickly as you can.", durationSeconds: 90 },
-  { id: "ex-target", domain: "attention", name: "Target Detection", instructions: "Tap only when the target shape appears among distractors.", durationSeconds: 60 },
-  { id: "ex-sequence", domain: "memory", name: "Working-Memory Sequence", instructions: "Repeat the sequence of highlighted tiles in the same order.", durationSeconds: 90 },
-  { id: "ex-flex", domain: "cognitive_flexibility", name: "Rule Switch", instructions: "Sort each card by color, then switch to sorting by shape when prompted.", durationSeconds: 75 },
+  { id: "ex-target", domain: "attention", name: "Target Detection", instructions: "Click only when the target number 7 appears.", durationSeconds: 60, type: "target_detection", category: "attention" },
+  { id: "ex-symbol", domain: "processing_speed", name: "Processing Speed Reaction", instructions: "Tap the button as soon as the signal changes.", durationSeconds: 60, type: "processing_speed_reaction", category: "processing_speed" },
+  { id: "ex-sequence", domain: "memory", name: "Sequence Recall", instructions: "Memorize each word sequence, then reproduce the order.", durationSeconds: 90, type: "sequence_recall", category: "memory" },
+  { id: "ex-flex", domain: "cognitive_flexibility", name: "Task Switching", instructions: "Apply the number or letter rule for each trial.", durationSeconds: 75, type: "task_switching", category: "cognitive_flexibility" },
 ];
 
 export const mockCognitiveHistory: Record<string, CognitiveSessionSummary[]> = {
