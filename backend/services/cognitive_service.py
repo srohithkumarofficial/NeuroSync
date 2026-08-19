@@ -49,7 +49,7 @@ def submit_session(payload: CognitiveSessionCreate) -> CognitiveSessionResponse:
     """Compatibility endpoint for the existing supervised reaction-time UI."""
     db = database.require_db()
     if not db.users.find_one({"_id": payload.patient_id}):
-        db.users.insert_one({"_id": payload.patient_id, "name": payload.patient_id, "email": f"{payload.patient_id.lower()}@demo.neurosync.local", "created_at": _now(), "preferences": {}})
+        db.users.insert_one({"_id": payload.patient_id, "name": payload.patient_id, "email": f"{payload.patient_id.lower()}@neurosync.local", "created_at": _now(), "preferences": {}})
     scores: dict[str, list[float]] = defaultdict(list)
     normalized: list[CognitiveResult] = []
     for result in payload.results:

@@ -4,7 +4,7 @@ import { Patient } from "@/types";
 import { patientService } from "@/services/patientService";
 import { MRIStatusBadge, PredictionBadge, ReportStatusBadge } from "@/components/StatusBadge";
 import { LoadingState, EmptyState } from "@/components/States";
-import { Search } from "lucide-react";
+import { Search, UserPlus } from "lucide-react";
 
 type FilterKey = "all" | "mri_pending" | "mri_analyzed" | "requires_review" | "stable" | "follow_up_required";
 
@@ -23,6 +23,9 @@ export function Patients() {
   const [query, setQuery] = useState(params.get("q") ?? "");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [sortKey, setSortKey] = useState<"name" | "lastVisit">("lastVisit");
+  const [showAdd, setShowAdd] = useState(false);
+  const [newPatient, setNewPatient] = useState({ name: "", dateOfBirth: "", sex: "female" as Patient["sex"], assignedClinician: "Dr. Elena Cho" });
+  const [addError, setAddError] = useState("");
 
   useEffect(() => {
     patientService.listPatients().then(setPatients);
@@ -58,6 +61,8 @@ export function Patients() {
           <h1 className="text-xl font-semibold text-ink">Patients</h1>
           <p className="text-sm text-ink-faint mt-0.5">{filtered.length} of {patients.length} patients</p>
         </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => { setAddError(""); setShowAdd(true); }} className="inline-flex items-center gap-1.5 bg-clinical text-white text-sm font-medium px-3 py-2 rounded-sm hover:bg-clinical-dark"><UserPlus size={15} /> Add patient</button>
         <div className="flex items-center gap-2 bg-surface border border-border rounded-sm px-3 py-1.5 w-72 max-w-full">
           <Search size={15} className="text-ink-faint" />
           <input
@@ -67,6 +72,7 @@ export function Patients() {
             aria-label="Search patients"
             className="bg-transparent outline-none text-sm w-full"
           />
+        </div>
         </div>
       </div>
 
@@ -131,6 +137,8 @@ export function Patients() {
           </table>
         </div>
       )}
+
+      {showAdd && <div className="fixed inset-0 z-40 bg-ink/20 flex items-center justify-center p-4"><div className="panel bg-surface p-5 w-full max-w-md space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-semibold text-ink">Add patient</h2><button onClick={() => setShowAdd(false)} className="text-sm text-ink-muted">Close</button></div><label className="block text-sm text-ink-muted">Full name<input value={newPatient.name} onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })} className="mt-1 w-full border border-border rounded-sm px-3 py-2 text-sm" /></label><label className="block text-sm text-ink-muted">Date of birth<input type="date" value={newPatient.dateOfBirth} onChange={(e) => setNewPatient({ ...newPatient, dateOfBirth: e.target.value })} className="mt-1 w-full border border-border rounded-sm px-3 py-2 text-sm" /></label><label className="block text-sm text-ink-muted">Sex<select value={newPatient.sex} onChange={(e) => setNewPatient({ ...newPatient, sex: e.target.value as Patient["sex"] })} className="mt-1 w-full border border-border rounded-sm px-3 py-2 text-sm"><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></select></label>{addError && <p className="text-sm text-critical">{addError}</p>}<div className="flex justify-end gap-2"><button onClick={() => setShowAdd(false)} className="text-sm text-ink-muted border border-border px-3 py-2 rounded-sm">Cancel</button><button onClick={async () => { try { const created = await patientService.createPatient(newPatient); setPatients((previous) => previous ? [created, ...previous] : [created]); setShowAdd(false); setNewPatient({ name: "", dateOfBirth: "", sex: "female", assignedClinician: "Dr. Elena Cho" }); } catch (error) { setAddError(error instanceof Error ? error.message : "Could not add patient"); } }} disabled={!newPatient.name || !newPatient.dateOfBirth} className="text-sm text-white bg-clinical px-3 py-2 rounded-sm disabled:opacity-50">Add patient</button></div></div></div>}
     </div>
   );
 }

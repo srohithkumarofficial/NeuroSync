@@ -78,10 +78,10 @@ export function Settings() {
           )}
           {active === "Model Information" && (
             <div className="space-y-3 max-w-lg text-sm">
-              <ModelRow name="MS lesion segmentation model" version="mock v1.0" connected />
-              <ModelRow name="Prediction model" version="mock v1.0" connected />
-              <ModelRow name="LLM explanation service" version="mock v1.0" connected />
-              <ModelRow name="Evidence verification engine" version="mock v1.0" connected />
+              <ModelRow name="MS lesion segmentation model" version="Configured in MRI service" connected />
+              <ModelRow name="Prediction model" version="Configured in MRI service" connected />
+              <ModelRow name="LLM explanation service" version="Sarvam AI" connected />
+              <ModelRow name="Evidence verification engine" version="NeuroSync Verification Firewall" connected />
               <ModelRow name="Spinal MRI module" version="not available" connected={false} />
             </div>
           )}

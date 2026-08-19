@@ -43,6 +43,12 @@ class Database:
         db.attempts.create_index("exercise_id")
         db.progress.create_index("user_id", unique=True)
         db.sessions.create_index([("user_id", ASCENDING), ("started_at", DESCENDING)])
+        db.patients.create_index("patient_id", unique=True)
+        db.mri_results.create_index("patient_id", unique=True)
+        db.reports.create_index([("patient_id", ASCENDING), ("created_at", DESCENDING)])
+        db.report_preferences.create_index([("clinician_id", ASCENDING), ("updated_at", DESCENDING)])
+        db.audit_events.create_index([("patient_id", ASCENDING), ("timestamp", DESCENDING)])
+        db.mri_visits.create_index([("patient_id", ASCENDING), ("scanDate", ASCENDING)])
 
 
 database = Database()

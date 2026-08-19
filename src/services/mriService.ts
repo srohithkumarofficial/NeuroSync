@@ -1,9 +1,9 @@
-import { MRIInferenceResult, MRIScanResult, MRISequence, ProcessingStep } from "@/types";
-import { mockScanResults } from "@/mock/mriScans";
-import { mockDelay, ApiError } from "./apiConfig";
+import { MRIInferenceResult, MRISequence } from "@/types";
+import { apiFetch, ApiError } from "./apiConfig";
 
-export const MRI_AI_SERVICE_URL = (import.meta.env.VITE_MRI_AI_SERVICE_URL || import.meta.env.VITE_MRI_AI_API_URL || "").replace(/\/$/, "");
-export const USE_REAL_MRI_AI = Boolean(MRI_AI_SERVICE_URL);
+export const MRI_AI_SERVICE_URL = (import.meta.env.VITE_MRI_AI_URL || import.meta.env.VITE_MRI_AI_SERVICE_URL || import.meta.env.VITE_MRI_AI_API_URL || "").replace(/\/$/, "");
+export const MRI_AI_URL = MRI_AI_SERVICE_URL;
+export const USE_REAL_MRI_AI = true;
 const REAL_INFERENCE_TIMEOUT_MS = 10 * 60 * 1000;
 const realResults = new Map<string, MRIInferenceResult>();
 
@@ -31,6 +31,10 @@ export function isNiftiFile(file: File): boolean {
 
 function parseInferenceResult(patientId: string, value: unknown): MRIInferenceResult {
   const response = value as Record<string, unknown>;
+  if (response.success === false) {
+    const detail = typeof response.error === "string" ? response.error : "The MRI model rejected the analysis.";
+    throw new ApiError(detail, "AI_MODEL_ERROR", true);
+  }
   const shape = response.shape;
   if (response.success !== true || !Number.isFinite(response.lesion_count) || !Number.isFinite(response.lesion_voxels) || !Number.isFinite(response.lesion_volume_ml) || !Array.isArray(shape) || shape.length !== 3 || !shape.every(Number.isFinite)) {
     throw new ApiError("The AI service returned an invalid analysis result.", "INVALID_AI_RESPONSE", true);
@@ -45,6 +49,33 @@ function parseInferenceResult(patientId: string, value: unknown): MRIInferenceRe
   };
 }
 
+export async function checkMRIHealth(): Promise<boolean> {
+  if (!MRI_AI_SERVICE_URL) return false;
+  try {
+    const response = await fetch(`${MRI_AI_SERVICE_URL}/`, {
+      method: "GET",
+      headers: { "ngrok-skip-browser-warning": "true" },
+    });
+    const body = await response.json().catch(() => null);
+    if (import.meta.env.DEV) console.log("MRI AI health status:", response.status, body);
+    return response.ok && body?.status === "online";
+  } catch (error) {
+    if (import.meta.env.DEV) console.error("MRI AI health check failed", error);
+    return false;
+  }
+}
+
+export async function persistMRIResult(patientId: string, result: MRIInferenceResult): Promise<void> {
+  await apiFetch("/api/mri/results", {
+    method: "POST",
+    body: JSON.stringify({ patient_id: patientId, lesion_count: result.lesion_count, lesion_voxels: result.lesion_voxels, lesion_volume_ml: result.lesion_volume_ml, shape: result.shape, prediction_file: result.prediction_file }),
+  });
+}
+
+export async function getPersistedMRIResult(patientId: string): Promise<MRIInferenceResult | undefined> {
+  return apiFetch<MRIInferenceResult>(`/api/mri/results/${encodeURIComponent(patientId)}`).catch(() => undefined);
+}
+
 export const mriService = {
   /** Sends the three real NIfTI volumes to the independently deployed nnU-Net service. */
   async runRealAnalysis(patientId: string, files: { t1: File; flair: File; t2: File }): Promise<MRIInferenceResult> {
@@ -55,18 +86,31 @@ export const mriService = {
     formData.append("t1", files.t1);
     formData.append("flair", files.flair);
     formData.append("t2", files.t2);
+    const predictionUrl = `${MRI_AI_SERVICE_URL}/predict`;
+    if (import.meta.env.DEV) {
+      console.log("MRI AI URL:", MRI_AI_URL);
+      console.log("MRI prediction URL:", predictionUrl);
+      console.log("T1:", files.t1);
+      console.log("FLAIR:", files.flair);
+      console.log("T2:", files.t2);
+    }
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), REAL_INFERENCE_TIMEOUT_MS);
     try {
-      const response = await fetch(`${MRI_AI_SERVICE_URL}/predict`, { method: "POST", body: formData, signal: controller.signal });
+      const response = await fetch(predictionUrl, { method: "POST", headers: { "ngrok-skip-browser-warning": "true" }, body: formData, signal: controller.signal });
       const body = await response.json().catch(() => null);
+      if (import.meta.env.DEV) {
+        console.log("MRI API status:", response.status);
+        console.log("MRI API response:", body);
+      }
       if (!response.ok) {
         if (import.meta.env.DEV) console.error("MRI AI service error", { status: response.status, body });
-        const message = response.status >= 500 ? "MRI AI service returned an error." : body?.detail || body?.message || "Invalid MRI files or request.";
+        const message = response.status === 404 ? "MRI AI service does not expose /predict." : response.status === 405 ? "MRI AI service rejected the prediction method." : response.status === 422 ? body?.detail || "MRI files were rejected by the AI service." : response.status >= 500 ? "MRI AI service returned an error." : body?.detail || body?.message || "Invalid MRI files or request.";
         throw new ApiError(message, "AI_SERVICE_ERROR", response.status >= 500);
       }
       const result = parseInferenceResult(patientId, body);
       realResults.set(patientId, result);
+      await persistMRIResult(patientId, result);
       return result;
     } catch (error) {
       if (error instanceof ApiError) throw error;
@@ -86,50 +130,5 @@ export const mriService = {
    * form data (NIfTI: .nii / .nii.gz) to POST /api/mri/upload and returns an
    * uploadId used by analyzeMRI(). Here we simulate the round trip.
    */
-  async uploadMRI(_patientId: string, fileNames: string[]): Promise<{ uploadId: string }> {
-    // TODO(backend): replace with multipart POST to `${API_BASE_URL}/api/mri/upload`
-    if (fileNames.length === 0) {
-      throw new ApiError("No files provided", "NO_FILES", false);
-    }
-    return mockDelay({ uploadId: `upload-${Date.now()}` }, 900);
-  },
 
-  /**
-   * Kicks off the AI analysis pipeline (preprocessing → segmentation →
-   * feature extraction → prediction). Real implementation should call
-   * POST /api/mri/analyze and then poll/subscribe to processing status via
-   * VITE_MRI_STATUS_STREAM_URL (WebSocket/SSE) rather than a flat promise.
-   */
-  async analyzeMRI(patientId: string): Promise<MRIScanResult> {
-    // TODO(backend): replace with `fetch(`${API_BASE_URL}/api/mri/analyze`, { method: "POST", body: ... })`
-    const result = mockScanResults[patientId];
-    if (!result) {
-      throw new ApiError("AI model unavailable for this scan", "MODEL_UNAVAILABLE", true);
-    }
-    return mockDelay(result, 1200);
-  },
-
-  async getScanResult(scanId: string): Promise<MRIScanResult | undefined> {
-    // TODO(backend): replace with `fetch(`${API_BASE_URL}/api/mri/${scanId}`)`
-    const result = Object.values(mockScanResults).find((r) => r.scan_id === scanId);
-    return mockDelay(result, 400);
-  },
-
-  /**
-   * Mock step-by-step processing simulation for the MRI Processing screen.
-   * The real system should replace this with a WebSocket/SSE subscription
-   * or short-interval polling against the backend job status endpoint.
-   */
-  getProcessingSteps(): ProcessingStep[] {
-    return [
-      { id: "upload", label: "MRI uploaded", status: "pending" },
-      { id: "preprocess", label: "Preprocessing", status: "pending" },
-      { id: "extraction", label: "Brain extraction", status: "pending" },
-      { id: "registration", label: "Registration", status: "pending" },
-      { id: "segmentation", label: "Lesion segmentation", status: "pending" },
-      { id: "features", label: "Feature extraction", status: "pending" },
-      { id: "prediction", label: "Prediction", status: "pending" },
-      { id: "report", label: "Report preparation", status: "pending" },
-    ];
-  },
 };

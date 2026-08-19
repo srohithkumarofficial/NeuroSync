@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Patient, EvidenceItem, VerifiedClaim } from "@/types";
 import { patientService } from "@/services/patientService";
-import { mriService } from "@/services/mriService";
 import { evidenceService } from "@/services/evidenceService";
 import { EvidenceGroup, VerifiedClaimRow } from "@/components/EvidenceCard";
 import { LoadingState, EmptyState } from "@/components/States";
@@ -28,9 +27,8 @@ export function ClinicalEvidence() {
     setClaims([]);
     evidenceService.getEvidence(selected).then(setEvidence);
     setLoadingClaims(true);
-    mriService
-      .analyzeMRI(selected)
-      .then((scan) => evidenceService.verifyExplanation(scan.scan_id))
+    evidenceService
+      .verifyExplanation(selected)
       .then(setClaims)
       .catch(() => setClaims([]))
       .finally(() => setLoadingClaims(false));

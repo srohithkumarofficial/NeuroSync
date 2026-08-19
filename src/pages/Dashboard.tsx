@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Patient, NotificationItem, AuditEvent } from "@/types";
 import { patientService } from "@/services/patientService";
 import { notificationService } from "@/services/notificationService";
-import { mockAuditTrail } from "@/mock/clinical";
+import { auditService } from "@/services/auditService";
 import { MetricCard } from "@/components/MetricCard";
 import { MRIStatusBadge, PredictionBadge } from "@/components/StatusBadge";
 import { LoadingState } from "@/components/States";
@@ -12,10 +12,14 @@ import { AlertTriangle, FileCheck, GitCompareArrows, ScanLine } from "lucide-rea
 export function Dashboard() {
   const [patients, setPatients] = useState<Patient[] | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [recentActivity, setRecentActivity] = useState<(AuditEvent & { patientName: string })[]>([]);
 
   useEffect(() => {
-    patientService.listPatients().then(setPatients);
-    notificationService.list().then(setNotifications);
+    Promise.all([patientService.listPatients(), notificationService.list()]).then(([list, alerts]) => {
+      setPatients(list);
+      setNotifications(alerts);
+      return Promise.all(list.map((patient) => auditService.getTrail(patient.id).then((events) => events.map((event) => ({ ...event, patientName: patient.name })))));
+    }).then((events) => setRecentActivity(events.flat().sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 6)));
   }, []);
 
   if (!patients) return <LoadingState label="Loading dashboard…" />;
@@ -24,11 +28,6 @@ export function Dashboard() {
   const pendingAnalysis = patients.filter((p) => p.mriStatus === "pending_review" || p.mriStatus === "not_started").length;
   const awaitingApproval = patients.filter((p) => p.lastReportStatus === "awaiting_approval" || p.lastReportStatus === "draft").length;
   const scheduled = patients.filter((p) => p.cognitiveStatus === "scheduled").length;
-
-  const recentActivity: (AuditEvent & { patientName: string })[] = Object.entries(mockAuditTrail)
-    .flatMap(([pid, events]) => events.map((e) => ({ ...e, patientName: patients.find((p) => p.id === pid)?.name ?? pid })))
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 6);
 
   return (
     <div className="space-y-6">

@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from backend.config.settings import get_settings
 from backend.database.connection import database
-from backend.routes import auth, cognitive, dashboard, exercises, progress, sessions, users, verification
+from backend.routes import auth, clinical, cognitive, dashboard, exercises, mri, patients, progress, reports, sessions, users, verification
 
 
 @asynccontextmanager
@@ -57,5 +57,5 @@ def health():
     return {"status": "healthy" if database.connected else "degraded", "database": "connected" if database.connected else "unavailable"}
 
 
-for router in (auth.router, users.router, exercises.router, cognitive.router, progress.router, dashboard.router, sessions.router, verification.router):
+for router in (auth.router, users.router, patients.router, mri.router, reports.router, clinical.router, exercises.router, cognitive.router, progress.router, dashboard.router, sessions.router, verification.router):
     app.include_router(router)

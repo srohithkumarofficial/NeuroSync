@@ -1,6 +1,5 @@
 import { EvidenceItem, VerifiedClaim } from "@/types";
-import { mockEvidence, mockVerifiedClaims } from "@/mock/clinical";
-import { mockDelay } from "./apiConfig";
+import { apiFetch } from "./apiConfig";
 
 // ----------------------------------------------------------------------------
 // evidenceService
@@ -12,12 +11,10 @@ import { mockDelay } from "./apiConfig";
 
 export const evidenceService = {
   async getEvidence(patientId: string): Promise<EvidenceItem[]> {
-    // TODO(backend): replace with `fetch(`${API_BASE_URL}/api/evidence/${patientId}`)`
-    return mockDelay(mockEvidence[patientId] ?? [], 500);
+    return apiFetch<EvidenceItem[]>(`/api/evidence/${encodeURIComponent(patientId)}`);
   },
 
   async verifyExplanation(scanId: string): Promise<VerifiedClaim[]> {
-    // TODO(backend): replace with `fetch(`${API_BASE_URL}/api/evidence/verify`, { method: "POST", body: JSON.stringify({ scan_id: scanId }) })`
-    return mockDelay(mockVerifiedClaims[scanId] ?? [], 700);
+    return apiFetch<VerifiedClaim[]>(`/api/evidence/${encodeURIComponent(scanId)}/claims`);
   },
 };

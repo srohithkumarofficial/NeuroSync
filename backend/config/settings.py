@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     mongodb_uri: str = Field(default="mongodb://localhost:27017", validation_alias=AliasChoices("MONGODB_URI", "MONGO_URI"))
     database_name: str = "neurosync"
     frontend_url: str = "http://localhost:5173"
+    sarvam_api_key: str = ""
+    sarvam_model: str = "sarvam-105b"
+    sarvam_api_url: str = "https://api.sarvam.ai/v1/chat/completions"
+    sarvam_timeout_seconds: float = 120.0
 
     model_config = SettingsConfigDict(env_file=Path(__file__).resolve().parents[1] / ".env", extra="ignore")
 

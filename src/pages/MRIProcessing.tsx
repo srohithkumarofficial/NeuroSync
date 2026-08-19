@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "@/services/apiConfig";
-import { mriService } from "@/services/mriService";
+import { checkMRIHealth, mriService } from "@/services/mriService";
 import { StepIndicator } from "./MRIUpload";
 import { Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 
@@ -18,7 +18,12 @@ export function MRIProcessing() {
     const files = state?.files;
     if (!files) { setStatus("failed"); setMessage("MRI files were not available. Return to upload and select T1, FLAIR, and T2 again."); return; }
     let active = true;
-    mriService.runRealAnalysis(patientId, files).then(() => {
+    setMessage("Checking MRI AI service connection...");
+    checkMRIHealth().then((reachable) => {
+      if (!reachable) throw new ApiError("MRI AI service is unreachable. The health endpoint did not return the expected online status.", "AI_SERVICE_UNAVAILABLE", true);
+      if (active) setMessage("Running MRI lesion analysis... The AI model is processing the MRI scans. This may take a few minutes.");
+      return mriService.runRealAnalysis(patientId, files);
+    }).then(() => {
       if (active) { setStatus("complete"); setMessage("Real lesion analysis complete."); }
     }).catch((error: unknown) => {
       if (active) { setStatus("failed"); setMessage(error instanceof ApiError ? error.message : "AI analysis service is currently unavailable."); }

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Patient, MRIScanResult, MRIVisit, CognitiveSessionSummary, ClinicalReport, EvidenceItem } from "@/types";
 import { patientService } from "@/services/patientService";
-import { mriService } from "@/services/mriService";
 import { cognitiveService } from "@/services/cognitiveService";
 import { reportService } from "@/services/reportService";
 import { evidenceService } from "@/services/evidenceService";
@@ -34,7 +33,6 @@ export function PatientProfile() {
     cognitiveService.getHistory(patientId).then(setCognitive);
     reportService.getReport(patientId).then((r) => setReport(r ?? null));
     evidenceService.getEvidence(patientId).then(setEvidence);
-    mriService.analyzeMRI(patientId).then(setScan).catch(() => setScan(null));
   }, [patientId]);
 
   if (patient === undefined) return <LoadingState label="Loading patient record…" />;

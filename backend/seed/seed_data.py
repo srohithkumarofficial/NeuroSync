@@ -1,4 +1,4 @@
-"""Seed a safe, repeatable cognitive-training demo dataset.
+"""Seed the persistent cognitive exercise catalog.
 
 Run with: python -m backend.seed.seed_data
 """
@@ -19,10 +19,9 @@ def main() -> None:
     database.connect()
     try:
         db = database.require_db()
-        db.users.update_one({"_id": "demo-user"}, {"$setOnInsert": {"name": "Demo User", "email": "demo@neurosync.local", "preferences": {"difficulty": "medium"}, "created_at": datetime.now(UTC)}}, upsert=True)
         for exercise in EXERCISES:
             db.exercises.replace_one({"_id": exercise["_id"]}, exercise, upsert=True)
-        print("Seed complete. Demo user: demo-user")
+        print("Exercise catalog seed complete.")
     finally:
         database.close()
 

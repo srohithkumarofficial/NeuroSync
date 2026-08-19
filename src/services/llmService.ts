@@ -1,6 +1,5 @@
 import { LLMExplanation } from "@/types";
-import { mockLLMExplanations } from "@/mock/clinical";
-import { mockDelay, ApiError } from "./apiConfig";
+import { apiFetch, ApiError } from "./apiConfig";
 
 // ----------------------------------------------------------------------------
 // llmService
@@ -11,11 +10,7 @@ import { mockDelay, ApiError } from "./apiConfig";
 
 export const llmService = {
   async generateExplanation(scanId: string): Promise<LLMExplanation> {
-    // TODO(backend): replace with `fetch(`${API_BASE_URL}/api/llm/explanation`, { method: "POST", body: JSON.stringify({ scan_id: scanId }) })`
-    const explanation = mockLLMExplanations[scanId];
-    if (!explanation) {
-      throw new ApiError("LLM unavailable — explanation could not be generated", "LLM_UNAVAILABLE", true);
-    }
-    return mockDelay(explanation, 900);
+    try { return await apiFetch<LLMExplanation>("/api/llm/explanation", { method: "POST", body: JSON.stringify({ scan_id: scanId }) }); }
+    catch (error) { throw error instanceof ApiError ? error : new ApiError("LLM unavailable — explanation could not be generated", "LLM_UNAVAILABLE", true); }
   },
 };

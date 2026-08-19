@@ -15,4 +15,4 @@ python -m backend.seed.seed_data
 uvicorn backend.main:app --reload --port 8000
 ```
 
-Open `http://localhost:8000/docs` to test the API. Set the frontend root `.env` values to `VITE_USE_MOCK_API=false` and `VITE_API_BASE_URL=http://localhost:8000` to use the connected cognitive service.
+Open `http://localhost:8000/docs` to test the API. Set the frontend root `.env` value `VITE_API_BASE_URL=http://localhost:8000` to use the MongoDB-backed application.

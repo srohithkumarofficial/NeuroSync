@@ -30,7 +30,7 @@ export function Help() {
 
       <div className="panel p-5 space-y-1 text-xs text-ink-faint">
         <p>NeuroSync — Clinical Decision Support Platform</p>
-        <p>Build: demo-prototype · Environment: hackathon demo</p>
+        <p>Environment: connected clinical application</p>
       </div>
     </div>
   );

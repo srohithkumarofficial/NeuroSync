@@ -13,7 +13,7 @@ export function Login() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await login(email, password || "demo-password");
+      await login(email, password);
       navigate("/dashboard");
     } catch {
       // error already surfaced via useAuth
@@ -90,7 +90,7 @@ export function Login() {
           <p>This system contains protected health information. Access is logged and restricted to authorized clinical staff. By signing in you agree to your institution's acceptable use policy.</p>
         </div>
         <div className="mt-2 flex items-center gap-2 justify-center text-xs text-ink-faint">
-          <Lock size={12} /> Secured session · Demo environment
+          <Lock size={12} /> Secured clinical session
         </div>
       </div>
     </div>

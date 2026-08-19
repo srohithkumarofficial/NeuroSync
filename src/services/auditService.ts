@@ -1,6 +1,5 @@
 import { AuditEvent } from "@/types";
-import { mockAuditTrail } from "@/mock/clinical";
-import { mockDelay } from "./apiConfig";
+import { apiFetch } from "./apiConfig";
 
 // ----------------------------------------------------------------------------
 // auditService — read-only audit trail. Backend should log every clinical
@@ -9,6 +8,6 @@ import { mockDelay } from "./apiConfig";
 
 export const auditService = {
   async getTrail(patientId: string): Promise<AuditEvent[]> {
-    return mockDelay(mockAuditTrail[patientId] ?? [], 350);
+    return apiFetch<AuditEvent[]>(`/api/audit/${encodeURIComponent(patientId)}`);
   },
 };
