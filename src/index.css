@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-surface-muted text-ink font-sans antialiased;
+  font-feature-settings: "tnum" 1, "cv11" 1;
+}
+
+h1, h2, h3, h4 {
+  @apply font-display text-ink;
+}
+
+::selection {
+  background: #C7DAEA;
+}
+
+/* Visible focus states everywhere — accessibility requirement */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #2C5F8A;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbars: quiet, clinical */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD1DA; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #A9B1BE; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.mono-num {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel {
+  @apply bg-surface border border-border rounded-md shadow-card;
+}
+
+.badge {
+  @apply inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-sm border;
+}
