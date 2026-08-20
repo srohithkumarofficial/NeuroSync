@@ -30,7 +30,17 @@ export function MRIResults() {
     <StepIndicator active={5} />
     <PatientHeader patient={patient} />
     <div className="panel p-4 flex flex-wrap items-center justify-between gap-3 text-sm"><span className="text-ink-muted">Source: <span className="text-ink font-medium">Real nnU-Net lesion inference</span></span><span className="text-xs text-ink-faint mono-num">T1 + FLAIR + T2</span></div>
-    <div><h2 className="text-base font-semibold text-ink mb-3">MS lesion analysis</h2><div className="grid grid-cols-2 lg:grid-cols-4 gap-3"><MetricCard label="Lesion count" value={result.lesion_count} /><MetricCard label="Total lesion volume" value={`${result.lesion_volume_ml.toFixed(2)} mL`} /><MetricCard label="Lesion voxels" value={result.lesion_voxels} /><MetricCard label="MRI dimensions" value={result.shape.join(" × ")} /></div></div>
+    <div>
+      <h2 className="text-base font-semibold text-ink mb-3">MS lesion analysis</h2>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <MetricCard label="Lesion count" value={result.lesion_count} />
+        <MetricCard label="Total lesion volume" value={`${result.lesion_volume_ml.toFixed(2)} mL`} />
+        <MetricCard label="Lesion voxels" value={result.lesion_voxels} />
+        <MetricCard label="MRI dimensions" value={result.shape.join(" x ")} />
+        <MetricCard label="Estimated EDSS" value={typeof result.edss_score === "number" ? result.edss_score.toFixed(1) : "Unavailable"} />
+      </div>
+    </div>
+    {result.edss_band && <div className="panel p-4 text-sm"><p className="font-medium text-ink">{result.edss_band}</p><p className="text-ink-muted mt-1">{result.edss_note}</p></div>}
     <div className="flex justify-end"><Link to={`/reports?patientId=${encodeURIComponent(patientId)}`} className="bg-clinical text-white text-sm font-medium px-5 py-2.5 rounded-sm hover:bg-clinical-dark">Generate clinical report</Link></div>
   </div>;
 }

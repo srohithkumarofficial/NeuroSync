@@ -68,6 +68,9 @@ export interface MRIInferenceResult {
   lesion_volume_ml: number;
   shape: [number, number, number];
   prediction_file: string;
+  edss_score?: number | null;
+  edss_band?: string | null;
+  edss_note?: string | null;
 }
 
 export type ProcessingStepStatus = "pending" | "in_progress" | "complete" | "error";

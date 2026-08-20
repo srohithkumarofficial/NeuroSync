@@ -46,6 +46,9 @@ function parseInferenceResult(patientId: string, value: unknown): MRIInferenceRe
     lesion_volume_ml: Number(response.lesion_volume_ml),
     shape: [Number(shape[0]), Number(shape[1]), Number(shape[2])],
     prediction_file: typeof response.prediction_file === "string" ? response.prediction_file : "",
+    edss_score: null,
+    edss_band: null,
+    edss_note: null,
   };
 }
 
@@ -82,6 +85,9 @@ export async function getPersistedMRIResult(patientId: string): Promise<MRIInfer
       lesion_volume_ml: response.lesion_volume_ml,
       shape: response.shape,
       prediction_file: response.prediction_file,
+      edss_score: response.edss_score ?? null,
+      edss_band: response.edss_band ?? null,
+      edss_note: response.edss_note ?? null,
     };
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return undefined;
@@ -96,6 +102,9 @@ type BackendMRIResult = {
   lesion_volume_ml: number;
   shape: [number, number, number];
   prediction_file: string;
+  edss_score?: number | null;
+  edss_band?: string | null;
+  edss_note?: string | null;
   updated_at: string;
 };
 

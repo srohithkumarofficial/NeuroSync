@@ -12,3 +12,6 @@ class MRIResultCreate(BaseModel):
 
 class MRIResultResponse(MRIResultCreate):
     updated_at: str
+    edss_score: float | None = None
+    edss_band: str | None = None
+    edss_note: str | None = None

@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from backend.database.connection import database
 from backend.schemas.patients import PatientCreate, PatientResponse
+from backend.services.prediction_metrics import mri_progression_from_visits, prediction_label_from_mri, prediction_score_from_mri
 
 router = APIRouter(prefix="/api/patients", tags=["Patients"])
 
@@ -12,28 +13,6 @@ router = APIRouter(prefix="/api/patients", tags=["Patients"])
 def _age(birth_date: date) -> int:
     today = date.today()
     return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-
-
-def _prediction_from_mri(mri: dict | None) -> str:
-    if not mri:
-        return "not_available"
-    lesion_count = int(mri.get("lesion_count", 0))
-    lesion_volume_ml = float(mri.get("lesion_volume_ml", 0))
-    if lesion_count >= 4 or lesion_volume_ml >= 1.5:
-        return "ms"
-    if lesion_count >= 1:
-        return "cis"
-    return "ris"
-
-
-def _prediction_score_from_mri(mri: dict | None) -> int | None:
-    if not mri:
-        return None
-    lesion_count = max(0, int(mri.get("lesion_count", 0)))
-    lesion_volume_ml = max(0.0, float(mri.get("lesion_volume_ml", 0)))
-    count_score = min(lesion_count / 4, 1) * 60
-    volume_score = min(lesion_volume_ml / 1.5, 1) * 40
-    return round(count_score + volume_score)
 
 
 def _response(document: dict) -> PatientResponse:
@@ -47,6 +26,8 @@ def _response(document: dict) -> PatientResponse:
 
     patient_id = document["patient_id"]
     mri = db.mri_results.find_one({"patient_id": patient_id})
+    visits = list(db.mri_visits.find({"patient_id": patient_id}, {"_id": 0}).sort("scanDate", -1).limit(2))
+    progression = mri_progression_from_visits(visits)
     report = db.reports.find_one({"patient_id": patient_id}, sort=[("created_at", -1)])
     cognitive_session = db.sessions.find_one({"patientId": patient_id})
 
@@ -54,8 +35,8 @@ def _response(document: dict) -> PatientResponse:
         id=patient_id,
         age=_age(document["date_of_birth"]),
         last_visit=last_visit,
-        prediction_status=_prediction_from_mri(mri),
-        prediction_score=_prediction_score_from_mri(mri),
+        prediction_status=prediction_label_from_mri(mri, progression),
+        prediction_score=prediction_score_from_mri(mri, progression),
         cognitive_status="completed" if cognitive_session else document.get("cognitive_status", "not_started"),
         last_report_status="approved" if report and report.get("status") == "approved" else "draft" if report else document.get("last_report_status", "none"),
         **{
