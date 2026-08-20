@@ -2,7 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { Wifi, WifiOff } from "lucide-react";
 
-const sections = ["Profile", "Hospital / Clinic", "Notifications", "Security", "AI Settings", "Model Information"] as const;
+const sections = ["Profile", "Hospital / Clinic", "Notifications", "Security", "AI Settings"] as const;
 type Section = (typeof sections)[number];
 
 export function Settings() {
@@ -76,15 +76,7 @@ export function Settings() {
               </label>
             </div>
           )}
-          {active === "Model Information" && (
-            <div className="space-y-3 max-w-lg text-sm">
-              <ModelRow name="MS lesion segmentation model" version="Configured in MRI service" connected />
-              <ModelRow name="Prediction model" version="Configured in MRI service" connected />
-              <ModelRow name="LLM explanation service" version="Sarvam AI" connected />
-              <ModelRow name="Evidence verification engine" version="NeuroSync Verification Firewall" connected />
-              <ModelRow name="Spinal MRI module" version="not available" connected={false} />
-            </div>
-          )}
+          
         </div>
       </div>
     </div>
@@ -100,16 +92,4 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ModelRow({ name, version, connected }: { name: string; version: string; connected: boolean }) {
-  return (
-    <div className="flex items-center justify-between border-b border-border pb-3 last:border-0">
-      <div>
-        <p className="text-ink font-medium">{name}</p>
-        <p className="text-xs text-ink-faint mono-num">{version}</p>
-      </div>
-      <span className={`flex items-center gap-1.5 text-xs font-medium ${connected ? "text-stable" : "text-ink-faint"}`}>
-        {connected ? <Wifi size={14} /> : <WifiOff size={14} />} {connected ? "Connected" : "Offline"}
-      </span>
-    </div>
-  );
-}
+
