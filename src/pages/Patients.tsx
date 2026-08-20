@@ -125,7 +125,12 @@ export function Patients() {
                   <td className="px-4 py-2.5 text-ink-muted">{p.age} · {p.sex === "female" ? "F" : p.sex === "male" ? "M" : "O"}</td>
                   <td className="px-4 py-2.5 mono-num text-ink-muted">{p.lastVisit}</td>
                   <td className="px-4 py-2.5"><MRIStatusBadge status={p.mriStatus} /></td>
-                  <td className="px-4 py-2.5"><PredictionBadge label={p.predictionStatus} size="sm" /></td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <PredictionBadge label={p.predictionStatus} size="sm" />
+                      {typeof p.predictionScore === "number" && <span className="text-xs mono-num text-ink-muted">Score {p.predictionScore}%</span>}
+                    </div>
+                  </td>
                   <td className="px-4 py-2.5 text-ink-muted capitalize">{p.cognitiveStatus.replace("_", " ")}</td>
                   <td className="px-4 py-2.5"><ReportStatusBadge status={p.lastReportStatus} /></td>
                   <td className="px-4 py-2.5 text-right">

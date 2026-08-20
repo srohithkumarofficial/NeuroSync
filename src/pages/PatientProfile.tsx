@@ -128,7 +128,10 @@ function OverviewTab({ patient, scan, visits, cognitive }: { patient: Patient; s
           <h3 className="text-sm font-semibold text-ink mb-3">Current status</h3>
           {scan ? (
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <PredictionBadge label={patient.predictionStatus} />
+              <div className="flex items-center gap-2">
+                <PredictionBadge label={patient.predictionStatus} />
+                {typeof patient.predictionScore === "number" && <span className="text-sm mono-num text-ink-muted">MRI evidence score {patient.predictionScore}%</span>}
+              </div>
               <div className="flex gap-4">
                 <MetricCard label="Lesions" value={scan.lesion_count} />
                 <MetricCard label="Volume" value={scan.lesion_volume_ml} unit="mL" />

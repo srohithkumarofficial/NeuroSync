@@ -72,7 +72,12 @@ export function Dashboard() {
                     <td className="px-4 py-2.5 text-ink-muted">{p.age}</td>
                     <td className="px-4 py-2.5 text-ink-muted mono-num">{p.lastVisit}</td>
                     <td className="px-4 py-2.5"><MRIStatusBadge status={p.mriStatus} /></td>
-                    <td className="px-4 py-2.5"><PredictionBadge label={p.predictionStatus} size="sm" /></td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <PredictionBadge label={p.predictionStatus} size="sm" />
+                        {typeof p.predictionScore === "number" && <span className="text-xs mono-num text-ink-muted">Score {p.predictionScore}%</span>}
+                      </div>
+                    </td>
                     <td className="px-4 py-2.5 text-right">
                       <Link to={`/patients/${p.id}`} className="text-xs font-medium text-clinical hover:underline">Open</Link>
                     </td>

@@ -26,6 +26,16 @@ def _prediction_from_mri(mri: dict | None) -> str:
     return "ris"
 
 
+def _prediction_score_from_mri(mri: dict | None) -> int | None:
+    if not mri:
+        return None
+    lesion_count = max(0, int(mri.get("lesion_count", 0)))
+    lesion_volume_ml = max(0.0, float(mri.get("lesion_volume_ml", 0)))
+    count_score = min(lesion_count / 4, 1) * 60
+    volume_score = min(lesion_volume_ml / 1.5, 1) * 40
+    return round(count_score + volume_score)
+
+
 def _response(document: dict) -> PatientResponse:
     db = database.require_db()
     last_visit = document.get("last_visit")
@@ -45,6 +55,7 @@ def _response(document: dict) -> PatientResponse:
         age=_age(document["date_of_birth"]),
         last_visit=last_visit,
         prediction_status=_prediction_from_mri(mri),
+        prediction_score=_prediction_score_from_mri(mri),
         cognitive_status="completed" if cognitive_session else document.get("cognitive_status", "not_started"),
         last_report_status="approved" if report and report.get("status") == "approved" else "draft" if report else document.get("last_report_status", "none"),
         **{

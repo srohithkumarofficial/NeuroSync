@@ -23,6 +23,7 @@ export interface Patient {
   assignedClinician: string;
   mriStatus: "not_started" | "pending_review" | "analyzed" | "requires_review";
   predictionStatus: PredictionLabel | "not_available";
+  predictionScore: number | null;
   cognitiveStatus: "not_started" | "scheduled" | "completed";
   lastReportStatus: "none" | "draft" | "awaiting_approval" | "approved";
   flags: PatientFlag[];
