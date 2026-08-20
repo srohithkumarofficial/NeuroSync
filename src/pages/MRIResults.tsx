@@ -31,7 +31,6 @@ export function MRIResults() {
     <PatientHeader patient={patient} />
     <div className="panel p-4 flex flex-wrap items-center justify-between gap-3 text-sm"><span className="text-ink-muted">Source: <span className="text-ink font-medium">Real nnU-Net lesion inference</span></span><span className="text-xs text-ink-faint mono-num">T1 + FLAIR + T2</span></div>
     <div><h2 className="text-base font-semibold text-ink mb-3">MS lesion analysis</h2><div className="grid grid-cols-2 lg:grid-cols-4 gap-3"><MetricCard label="Lesion count" value={result.lesion_count} /><MetricCard label="Total lesion volume" value={`${result.lesion_volume_ml.toFixed(2)} mL`} /><MetricCard label="Lesion voxels" value={result.lesion_voxels} /><MetricCard label="MRI dimensions" value={result.shape.join(" × ")} /></div></div>
-    <div className="panel p-5"><h2 className="text-base font-semibold text-ink mb-2">Segmentation output</h2><p className="text-sm text-ink-muted">The real inference service produced a NIfTI segmentation mask. A browser-renderable mask endpoint is not yet available.</p>{result.prediction_file && <p className="text-xs text-ink-faint mt-2 mono-num">Inference output: {result.prediction_file}</p>}</div>
     <div className="flex justify-end"><Link to={`/reports?patientId=${encodeURIComponent(patientId)}`} className="bg-clinical text-white text-sm font-medium px-5 py-2.5 rounded-sm hover:bg-clinical-dark">Generate clinical report</Link></div>
   </div>;
 }
