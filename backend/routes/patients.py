@@ -14,7 +14,20 @@ def _age(birth_date: date) -> int:
     return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
 
 
+def _prediction_from_mri(mri: dict | None) -> str:
+    if not mri:
+        return "not_available"
+    lesion_count = int(mri.get("lesion_count", 0))
+    lesion_volume_ml = float(mri.get("lesion_volume_ml", 0))
+    if lesion_count >= 4 or lesion_volume_ml >= 1.5:
+        return "ms"
+    if lesion_count >= 1:
+        return "cis"
+    return "ris"
+
+
 def _response(document: dict) -> PatientResponse:
+    db = database.require_db()
     last_visit = document.get("last_visit")
 
     # MongoDB stores timestamps as datetime.
@@ -22,10 +35,18 @@ def _response(document: dict) -> PatientResponse:
     if isinstance(last_visit, datetime):
         last_visit = last_visit.date()
 
+    patient_id = document["patient_id"]
+    mri = db.mri_results.find_one({"patient_id": patient_id})
+    report = db.reports.find_one({"patient_id": patient_id}, sort=[("created_at", -1)])
+    cognitive_session = db.sessions.find_one({"patientId": patient_id})
+
     return PatientResponse(
-        id=document["patient_id"],
+        id=patient_id,
         age=_age(document["date_of_birth"]),
         last_visit=last_visit,
+        prediction_status=_prediction_from_mri(mri),
+        cognitive_status="completed" if cognitive_session else document.get("cognitive_status", "not_started"),
+        last_report_status="approved" if report and report.get("status") == "approved" else "draft" if report else document.get("last_report_status", "none"),
         **{
             key: document[key]
             for key in (
@@ -34,9 +55,6 @@ def _response(document: dict) -> PatientResponse:
                 "sex",
                 "assigned_clinician",
                 "mri_status",
-                "prediction_status",
-                "cognitive_status",
-                "last_report_status",
                 "flags",
             )
         }

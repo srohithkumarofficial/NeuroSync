@@ -73,8 +73,31 @@ export async function persistMRIResult(patientId: string, result: MRIInferenceRe
 }
 
 export async function getPersistedMRIResult(patientId: string): Promise<MRIInferenceResult | undefined> {
-  return apiFetch<MRIInferenceResult>(`/api/mri/results/${encodeURIComponent(patientId)}`).catch(() => undefined);
+  try {
+    const response = await apiFetch<BackendMRIResult>(`/api/mri/results/${encodeURIComponent(patientId)}`);
+    return {
+      patientId: response.patient_id,
+      lesion_count: response.lesion_count,
+      lesion_voxels: response.lesion_voxels,
+      lesion_volume_ml: response.lesion_volume_ml,
+      shape: response.shape,
+      prediction_file: response.prediction_file,
+    };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return undefined;
+    throw error;
+  }
 }
+
+type BackendMRIResult = {
+  patient_id: string;
+  lesion_count: number;
+  lesion_voxels: number;
+  lesion_volume_ml: number;
+  shape: [number, number, number];
+  prediction_file: string;
+  updated_at: string;
+};
 
 export const mriService = {
   /** Sends the three real NIfTI volumes to the independently deployed nnU-Net service. */

@@ -13,13 +13,13 @@ export function VisitTimeline({ visits }: { visits: MRIVisit[] }) {
             <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm mb-1.5">
               <span className="text-ink-muted">Lesions: <span className="mono-num text-ink font-medium">{v.lesionCount}</span></span>
               <span className="text-ink-muted">Volume: <span className="mono-num text-ink font-medium">{v.lesionVolumeML.toFixed(1)} mL</span></span>
-              <span className="text-ink-muted">New: <span className="mono-num text-ink font-medium">{v.newLesions}</span></span>
-              <span className="text-ink-muted">Enlarging: <span className="mono-num text-ink font-medium">{v.enlargingLesions}</span></span>
+              <span className="text-ink-muted">New: <span className="mono-num text-ink font-medium">{v.newLesions ?? "Unavailable"}</span></span>
+              <span className="text-ink-muted">Enlarging: <span className="mono-num text-ink font-medium">{v.enlargingLesions ?? "Unavailable"}</span></span>
               {v.cognitiveScore !== null && (
                 <span className="text-ink-muted">Cognitive: <span className="mono-num text-ink font-medium">{v.cognitiveScore}</span></span>
               )}
             </div>
-            <p className="text-sm text-ink-muted">{v.clinicianNote}</p>
+            {v.clinicianNote && <p className="text-sm text-ink-muted">{v.clinicianNote}</p>}
           </div>
         </div>
       ))}

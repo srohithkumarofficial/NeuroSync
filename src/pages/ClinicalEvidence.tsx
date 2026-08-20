@@ -3,7 +3,7 @@ import { Patient, EvidenceItem, VerifiedClaim } from "@/types";
 import { patientService } from "@/services/patientService";
 import { evidenceService } from "@/services/evidenceService";
 import { EvidenceGroup, VerifiedClaimRow } from "@/components/EvidenceCard";
-import { LoadingState, EmptyState } from "@/components/States";
+import { LoadingState, EmptyState, ErrorState } from "@/components/States";
 import { ShieldCheck } from "lucide-react";
 
 export function ClinicalEvidence() {
@@ -11,6 +11,8 @@ export function ClinicalEvidence() {
   const [selected, setSelected] = useState("");
   const [evidence, setEvidence] = useState<EvidenceItem[] | null>(null);
   const [claims, setClaims] = useState<VerifiedClaim[]>([]);
+  const [evidenceError, setEvidenceError] = useState("");
+  const [claimsError, setClaimsError] = useState("");
   const [loadingClaims, setLoadingClaims] = useState(false);
 
   useEffect(() => {
@@ -24,13 +26,18 @@ export function ClinicalEvidence() {
   useEffect(() => {
     if (!selected) return;
     setEvidence(null);
+    setEvidenceError("");
     setClaims([]);
-    evidenceService.getEvidence(selected).then(setEvidence);
+    setClaimsError("");
+    evidenceService.getEvidence(selected).then(setEvidence).catch((error) => {
+      setEvidence([]);
+      setEvidenceError(error instanceof Error ? error.message : "Could not load evidence");
+    });
     setLoadingClaims(true);
     evidenceService
       .verifyExplanation(selected)
       .then(setClaims)
-      .catch(() => setClaims([]))
+      .catch((error) => setClaimsError(error instanceof Error ? error.message : "Could not verify LLM statements"))
       .finally(() => setLoadingClaims(false));
   }, [selected]);
 
@@ -48,7 +55,9 @@ export function ClinicalEvidence() {
 
       <section>
         <h2 className="text-base font-semibold text-ink mb-3">Evidence behind the prediction</h2>
-        {evidence === null ? (
+        {evidenceError ? (
+          <ErrorState title="Evidence unavailable" description={evidenceError} />
+        ) : evidence === null ? (
           <LoadingState label="Assembling evidence…" />
         ) : evidence.length === 0 ? (
           <EmptyState title="No evidence available" description="Insufficient clinical information to generate an evidence summary." />
@@ -71,7 +80,9 @@ export function ClinicalEvidence() {
           Every statement produced by the LLM is checked against structured model output and the clinical record before it reaches a clinician.
           Statements that cannot be traced to verified evidence are blocked.
         </p>
-        {loadingClaims ? (
+        {claimsError ? (
+          <ErrorState title="Verification unavailable" description={claimsError} />
+        ) : loadingClaims ? (
           <LoadingState label="Verifying AI explanation…" />
         ) : claims.length === 0 ? (
           <EmptyState title="No LLM statements to verify" description="Run MRI analysis to generate an AI explanation for verification." />

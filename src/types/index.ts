@@ -35,6 +35,9 @@ export type PatientFlag =
   | "insufficient_data";
 
 export type PredictionLabel =
+  | "ris"
+  | "cis"
+  | "ms"
   | "higher_likelihood"
   | "lower_likelihood"
   | "uncertain"
@@ -110,10 +113,10 @@ export interface MRIVisit {
   scanDate: string;
   lesionCount: number;
   lesionVolumeML: number;
-  newLesions: number;
-  enlargingLesions: number;
+  newLesions?: number | null;
+  enlargingLesions?: number | null;
   cognitiveScore: number | null;
-  clinicianNote: string;
+  clinicianNote?: string;
 }
 
 // ---------------------------------------------------------------------------

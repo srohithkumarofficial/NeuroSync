@@ -46,6 +46,8 @@ async def create_report(patient_id: str, clinician_id: str) -> dict:
     now = datetime.now(UTC)
     document = {"_id": f"rpt-{uuid4().hex}", "patient_id": patient_id, "scan_id": f"mri-{patient_id}", "status": "ai_draft", "created_at": now, **draft, "verification_action": verification.action, "verification_risk": verification.risk_level, "verification_claims": [claim.model_dump() for claim in verification.claims], "versions": [{"version": 1, "type": "ai_generated", "content": combined, "created_at": now}]}
     db.reports.insert_one(document)
+    db.patients.update_one({"patient_id": patient_id}, {"$set": {"last_report_status": "draft", "last_visit": now}})
+    db.audit_events.insert_one({"id": f"report-{patient_id}-{now.timestamp()}", "patient_id": patient_id, "timestamp": now, "actor": "llm", "description": f"AI-assisted report draft generated with verification action {verification.action}."})
     return _serialize(document)
 
 
@@ -61,6 +63,8 @@ def edit_report(report_id: str, payload: ReportEditRequest) -> dict:
         raise ValueError("Report not found")
     now = datetime.now(UTC)
     db.reports.update_one({"_id": report_id}, {"$set": {"doctor_edit": payload.report, "report": payload.report, "status": "clinician_edited"}, "$push": {"versions": {"version": len(document.get("versions", [])) + 1, "type": "doctor_edited", "content": payload.report, "created_at": now}}})
+    db.patients.update_one({"patient_id": document["patient_id"]}, {"$set": {"last_report_status": "draft", "last_visit": now}})
+    db.audit_events.insert_one({"id": f"report-edit-{document['patient_id']}-{now.timestamp()}", "patient_id": document["patient_id"], "timestamp": now, "actor": "clinician", "description": "Clinician edited report draft."})
     original = document.get("doctor_edit") or document["report"]
     changes = " ".join(item[2:] for item in ndiff(original.split(), payload.report.split()) if item.startswith(("+ ", "- ")) and not any(character.isdigit() for character in item[2:]))
     guidance = f"Apply recurring clinician wording or structure preference only; never treat it as medical evidence: {changes[:1000]}"
@@ -77,4 +81,6 @@ def approve_report(report_id: str, clinician_id: str, clinician_name: str) -> di
         raise ValueError("A blocked report cannot be approved.")
     now = datetime.now(UTC)
     db.reports.update_one({"_id": report_id}, {"$set": {"status": "approved", "approved_by": clinician_name, "approved_at": now}, "$push": {"versions": {"version": len(document.get("versions", [])) + 1, "type": "final_approved", "content": document.get("doctor_edit") or document["report"], "created_at": now, "clinician_id": clinician_id}}})
+    db.patients.update_one({"patient_id": document["patient_id"]}, {"$set": {"last_report_status": "approved", "last_visit": now}})
+    db.audit_events.insert_one({"id": f"report-approve-{document['patient_id']}-{now.timestamp()}", "patient_id": document["patient_id"], "timestamp": now, "actor": "clinician", "description": f"Report approved by {clinician_name}."})
     return _serialize(db.reports.find_one({"_id": report_id}))

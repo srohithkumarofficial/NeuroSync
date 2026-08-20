@@ -22,6 +22,9 @@ export function Pill({ tone, icon, children }: { tone: Tone; icon?: React.ReactN
 
 export function PredictionBadge({ label, size = "md" }: { label: PredictionLabel | "not_available"; size?: "sm" | "md" }) {
   const map: Record<string, { tone: Tone; text: string; icon: React.ReactNode }> = {
+    ris: { tone: "clinical", text: "RIS", icon: <HelpCircle size={size === "sm" ? 12 : 14} /> },
+    cis: { tone: "warn", text: "CIS", icon: <AlertTriangle size={size === "sm" ? 12 : 14} /> },
+    ms: { tone: "critical", text: "MS", icon: <ShieldAlert size={size === "sm" ? 12 : 14} /> },
     higher_likelihood: { tone: "warn", text: "Higher likelihood", icon: <AlertTriangle size={size === "sm" ? 12 : 14} /> },
     lower_likelihood: { tone: "stable", text: "Lower likelihood", icon: <CheckCircle2 size={size === "sm" ? 12 : 14} /> },
     uncertain: { tone: "neutral", text: "Uncertain", icon: <HelpCircle size={size === "sm" ? 12 : 14} /> },
@@ -57,12 +60,12 @@ export function MRIStatusBadge({ status }: { status: string }) {
 export function ReportStatusBadge({ status }: { status: string }) {
   const map: Record<string, { tone: Tone; text: string }> = {
     none: { tone: "neutral", text: "No report" },
-    draft: { tone: "neutral", text: "AI draft" },
-    ai_draft: { tone: "neutral", text: "AI draft" },
+    draft: { tone: "stable", text: "Available" },
+    ai_draft: { tone: "stable", text: "Available" },
     clinician_review: { tone: "warn", text: "In review" },
     clinician_edited: { tone: "warn", text: "Edited" },
     awaiting_approval: { tone: "warn", text: "Awaiting approval" },
-    approved: { tone: "stable", text: "Approved" },
+    approved: { tone: "stable", text: "Available" },
   };
   const m = map[status] ?? map.none;
   return <Pill tone={m.tone}>{m.text}</Pill>;

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Patient, MRIScanResult, MRIVisit, CognitiveSessionSummary, ClinicalReport, EvidenceItem } from "@/types";
+import { Patient, MRIInferenceResult, MRIVisit, CognitiveSessionSummary, ClinicalReport, EvidenceItem } from "@/types";
 import { patientService } from "@/services/patientService";
+import { getPersistedMRIResult } from "@/services/mriService";
 import { cognitiveService } from "@/services/cognitiveService";
 import { reportService } from "@/services/reportService";
 import { evidenceService } from "@/services/evidenceService";
@@ -21,21 +22,28 @@ export function PatientProfile() {
   const { patientId = "" } = useParams();
   const [patient, setPatient] = useState<Patient | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>("Overview");
-  const [scan, setScan] = useState<MRIScanResult | null>(null);
+  const [scan, setScan] = useState<MRIInferenceResult | null>(null);
   const [visits, setVisits] = useState<MRIVisit[]>([]);
   const [cognitive, setCognitive] = useState<CognitiveSessionSummary[]>([]);
   const [report, setReport] = useState<ClinicalReport | null>(null);
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    patientService.getPatient(patientId).then((p) => setPatient(p ?? null));
-    patientService.getTimeline(patientId).then(setVisits);
-    cognitiveService.getHistory(patientId).then(setCognitive);
-    reportService.getReport(patientId).then((r) => setReport(r ?? null));
-    evidenceService.getEvidence(patientId).then(setEvidence);
+    setLoadError("");
+    patientService.getPatient(patientId).then((p) => setPatient(p ?? null)).catch((error) => {
+      setPatient(null);
+      setLoadError(error instanceof Error ? error.message : "Could not load patient");
+    });
+    getPersistedMRIResult(patientId).then((result) => setScan(result ?? null)).catch((error) => setLoadError(error instanceof Error ? error.message : "Could not load MRI result"));
+    patientService.getTimeline(patientId).then(setVisits).catch((error) => setLoadError(error instanceof Error ? error.message : "Could not load MRI timeline"));
+    cognitiveService.getHistory(patientId).then(setCognitive).catch((error) => setLoadError(error instanceof Error ? error.message : "Could not load cognitive history"));
+    reportService.getReport(patientId).then((r) => setReport(r ?? null)).catch((error) => setLoadError(error instanceof Error ? error.message : "Could not load reports"));
+    evidenceService.getEvidence(patientId).then(setEvidence).catch((error) => setLoadError(error instanceof Error ? error.message : "Could not load clinical evidence"));
   }, [patientId]);
 
   if (patient === undefined) return <LoadingState label="Loading patient record…" />;
+  if (loadError) return <ErrorState title="Patient data unavailable" description={loadError} />;
   if (patient === null) return <ErrorState title="Patient not found" description={`No record exists for ${patientId}.`} />;
 
   return (
@@ -111,7 +119,7 @@ export function PatientProfile() {
   );
 }
 
-function OverviewTab({ patient, scan, visits, cognitive }: { patient: Patient; scan: MRIScanResult | null; visits: MRIVisit[]; cognitive: CognitiveSessionSummary[] }) {
+function OverviewTab({ patient, scan, visits, cognitive }: { patient: Patient; scan: MRIInferenceResult | null; visits: MRIVisit[]; cognitive: CognitiveSessionSummary[] }) {
   const latestCognitive = cognitive[cognitive.length - 1];
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -120,10 +128,10 @@ function OverviewTab({ patient, scan, visits, cognitive }: { patient: Patient; s
           <h3 className="text-sm font-semibold text-ink mb-3">Current status</h3>
           {scan ? (
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <PredictionBadge label={scan.prediction} />
+              <PredictionBadge label={patient.predictionStatus} />
               <div className="flex gap-4">
                 <MetricCard label="Lesions" value={scan.lesion_count} />
-                <MetricCard label="Volume" value={scan.total_lesion_volume_ml} unit="mL" />
+                <MetricCard label="Volume" value={scan.lesion_volume_ml} unit="mL" />
               </div>
             </div>
           ) : (

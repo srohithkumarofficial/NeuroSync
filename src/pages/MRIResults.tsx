@@ -12,12 +12,17 @@ export function MRIResults() {
   const navigate = useNavigate();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [result, setResult] = useState<MRIInferenceResult | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    patientService.getPatient(patientId).then((item) => setPatient(item ?? null));
-    getPersistedMRIResult(patientId).then((item) => setResult(item ?? null));
+    patientService.getPatient(patientId).then((item) => setPatient(item ?? null)).catch((err) => {
+      setPatient(null);
+      setError(err instanceof Error ? err.message : "Could not load patient");
+    });
+    getPersistedMRIResult(patientId).then((item) => setResult(item ?? null)).catch((err) => setError(err instanceof Error ? err.message : "Could not load MRI result"));
   }, [patientId]);
 
+  if (error) return <ErrorState title="MRI result unavailable" description={error} onRetry={() => window.location.reload()} />;
   if (!patient) return <LoadingState label="Loading patient..." />;
   if (!result) return <ErrorState title="MRI result unavailable" description="Run the real MRI analysis again to load the database-backed result." onRetry={() => navigate(`/mri/upload?patientId=${encodeURIComponent(patientId)}`)} />;
 

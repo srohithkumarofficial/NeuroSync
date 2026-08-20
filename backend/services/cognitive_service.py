@@ -48,8 +48,9 @@ def submit_answer(payload: AnswerSubmission) -> AnswerResult:
 def submit_session(payload: CognitiveSessionCreate) -> CognitiveSessionResponse:
     """Compatibility endpoint for the existing supervised reaction-time UI."""
     db = database.require_db()
+    now = _now()
     if not db.users.find_one({"_id": payload.patient_id}):
-        db.users.insert_one({"_id": payload.patient_id, "name": payload.patient_id, "email": f"{payload.patient_id.lower()}@neurosync.local", "created_at": _now(), "preferences": {}})
+        db.users.insert_one({"_id": payload.patient_id, "name": payload.patient_id, "email": f"{payload.patient_id.lower()}@neurosync.local", "created_at": now, "preferences": {}})
     scores: dict[str, list[float]] = defaultdict(list)
     normalized: list[CognitiveResult] = []
     for result in payload.results:
@@ -57,11 +58,13 @@ def submit_session(payload: CognitiveSessionCreate) -> CognitiveSessionResponse:
         corrected = result.model_copy(update={"score": server_score})
         normalized.append(corrected)
         scores[corrected.domain].append(server_score)
-        db.attempts.insert_one({"_id": f"att-{uuid4().hex}", "user_id": payload.patient_id, "exercise_id": corrected.exerciseId, "exercise_type": corrected.exerciseType or "supervised_cognitive", "category": corrected.domain, "difficulty": "medium", "answer": None, "correct": corrected.accuracyPct >= 70, "score": server_score, "response_time": corrected.avgReactionTimeMs / 1000, "metrics": corrected.metrics, "attempt_number": 1, "created_at": _now()})
+        db.attempts.insert_one({"_id": f"att-{uuid4().hex}", "user_id": payload.patient_id, "exercise_id": corrected.exerciseId, "exercise_type": corrected.exerciseType or "supervised_cognitive", "category": corrected.domain, "difficulty": "medium", "answer": None, "correct": corrected.accuracyPct >= 70, "score": server_score, "response_time": corrected.avgReactionTimeMs / 1000, "metrics": corrected.metrics, "attempt_number": 1, "created_at": now})
     domains = ["attention", "processing_speed", "memory", "cognitive_flexibility"]
     domain_scores = {domain: round(sum(scores[domain]) / len(scores[domain]), 2) if scores[domain] else 0.0 for domain in domains}
-    session = {"_id": f"cs-{uuid4().hex}", "patientId": payload.patient_id, "date": _now(), "domainScores": domain_scores, "results": [item.model_dump() for item in normalized]}
+    session = {"_id": f"cs-{uuid4().hex}", "patientId": payload.patient_id, "date": now, "domainScores": domain_scores, "results": [item.model_dump() for item in normalized]}
     db.sessions.insert_one(session)
+    db.patients.update_one({"patient_id": payload.patient_id}, {"$set": {"cognitive_status": "completed", "last_visit": now}})
+    db.audit_events.insert_one({"id": f"cognitive-{payload.patient_id}-{now.timestamp()}", "patient_id": payload.patient_id, "timestamp": now, "actor": "clinician", "description": "Supervised cognitive assessment session completed."})
     _refresh_progress(payload.patient_id)
     return CognitiveSessionResponse(**session, id=session["_id"])
 

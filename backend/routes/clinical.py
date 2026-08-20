@@ -17,15 +17,17 @@ def evidence(patient_id: str):
 
 @router.get("/api/evidence/{scan_id}/claims")
 def evidence_claims(scan_id: str):
-    report = database.require_db().reports.find_one({"scan_id": scan_id}, sort=[("created_at", -1)])
+    report = database.require_db().reports.find_one({"$or": [{"scan_id": scan_id}, {"patient_id": scan_id}]}, sort=[("created_at", -1)])
     if not report:
         return []
-    return [{"id": claim.get("id", f"claim-{index}"), "statement": claim.get("text", ""), "evidenceSource": "; ".join(claim.get("evidence", [])) or claim.get("reason", "Verification firewall"), "status": claim.get("status", "UNSUPPORTED").lower()} for index, claim in enumerate(report.get("verification_claims", []), 1)]
+    status_map = {"SUPPORTED": "verified", "UNSUPPORTED": "unsupported", "CONTRADICTED": "blocked", "REQUIRES_REVIEW": "requires_review"}
+    return [{"id": claim.get("id", f"claim-{index}"), "statement": claim.get("text", ""), "evidenceSource": "; ".join(claim.get("evidence", [])) or claim.get("reason", "Verification firewall"), "status": status_map.get(claim.get("status", "UNSUPPORTED"), "unsupported")} for index, claim in enumerate(report.get("verification_claims", []), 1)]
 
 
 @router.post("/api/llm/explanation")
 def llm_explanation(payload: dict):
-    report = database.require_db().reports.find_one({"scan_id": payload.get("scan_id")}, sort=[("created_at", -1)])
+    scan_id = payload.get("scan_id")
+    report = database.require_db().reports.find_one({"$or": [{"scan_id": scan_id}, {"patient_id": scan_id}]}, sort=[("created_at", -1)])
     if not report:
         raise HTTPException(404, "No Sarvam-generated report is available for this scan")
     return {"id": report["_id"], "scanId": payload["scan_id"], "summary": report["report"], "generatedAt": report["created_at"].isoformat(), "sourceEvidenceIds": [claim.get("id", "") for claim in report.get("verification_claims", [])], "status": "generated"}
@@ -42,6 +44,11 @@ def notifications():
     rows = []
     for patient in db.patients.find({"mri_status": {"$in": ["analyzed", "requires_review"]}}).sort("last_visit", -1).limit(20):
         rows.append({"id": f"mri-ready-{patient['patient_id']}", "patientId": patient["patient_id"], "type": "mri_ready", "message": f"MRI analysis available for {patient['name']}", "timestamp": patient.get("last_visit"), "read": False})
+    for report in db.reports.find({"status": {"$in": ["ai_draft", "clinician_review", "clinician_edited"]}}).sort("created_at", -1).limit(20):
+        rows.append({"id": f"report-approval-{report['_id']}", "patientId": report["patient_id"], "type": "report_approval", "message": f"Report awaiting approval for {report['patient_id']}", "timestamp": report.get("created_at"), "read": False})
+    for session in db.sessions.find({"patientId": {"$exists": True}}).sort("date", -1).limit(20):
+        rows.append({"id": f"cognitive-complete-{session['_id']}", "patientId": session["patientId"], "type": "cognitive_complete", "message": f"Cognitive assessment completed for {session['patientId']}", "timestamp": session.get("date"), "read": False})
+    rows.sort(key=lambda item: item.get("timestamp").isoformat() if hasattr(item.get("timestamp"), "isoformat") else str(item.get("timestamp") or ""), reverse=True)
     return rows
 
 
