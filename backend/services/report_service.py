@@ -40,7 +40,7 @@ async def create_report(patient_id: str, clinician_id: str) -> dict:
     }
     draft = await generate_sarvam_report(evidence, evidence["doctorPreferences"])
     combined = f"Findings:\n{draft['findings']}\n\nImpression:\n{draft['impression']}\n\n{draft['report']}"
-    verification = firewall.verify(VerificationRequest(response=combined, evidence=EvidenceBundle(lesion_count=mri["lesion_count"], lesion_volume_ml=mri["lesion_volume_ml"], lesion_voxels=mri["lesion_voxels"], modalities=["T1", "FLAIR", "T2"])))
+    verification = firewall.verify(VerificationRequest(response=combined, evidence=EvidenceBundle(lesion_count=mri["lesion_count"], lesion_volume_ml=mri["lesion_volume_ml"], lesion_voxels=mri["lesion_voxels"], shape=mri.get("shape", []), modalities=["T1", "FLAIR", "T2"])))
     if verification.action == "BLOCK":
         raise ValueError("The generated draft was blocked by the verification firewall and was not saved.")
     now = datetime.now(UTC)

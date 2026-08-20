@@ -27,18 +27,24 @@ export function EvidenceGroup({ category, items }: { category: EvidenceCategory;
 }
 
 export function VerifiedClaimRow({ statement, evidenceSource, status }: { statement: string; evidenceSource: string; status: string }) {
-  const isBlocked = status === "blocked" || status === "unsupported";
+  const isConflict = status === "blocked";
+  const needsReview = status === "unsupported" || status === "requires_review";
+  const tone = isConflict ? "border-critical bg-critical-light/30" : needsReview ? "border-warn bg-warn/10" : "border-stable bg-white";
+  const label = isConflict ? "Conflict" : needsReview ? "Needs review" : "Verified";
   return (
-    <div className={`panel p-4 ${isBlocked ? "bg-critical-light/30" : ""}`}>
+    <div className={`panel p-4 border ${tone}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-ink-faint uppercase tracking-wide mb-1">LLM statement</p>
+          <p className="text-xs font-medium text-ink-faint uppercase tracking-wide mb-1">Report claim</p>
           <p className="text-sm text-ink">{statement}</p>
         </div>
-        {isBlocked ? <XCircle size={18} className="text-critical shrink-0" /> : <Check size={18} className="text-stable shrink-0" />}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-medium text-ink-muted">{label}</span>
+          {isConflict ? <XCircle size={18} className="text-critical" /> : needsReview ? <AlertTriangle size={18} className="text-warn" /> : <Check size={18} className="text-stable" />}
+        </div>
       </div>
       <div className="mt-3 pt-3 border-t border-border">
-        <p className="text-xs font-medium text-ink-faint uppercase tracking-wide mb-1">Evidence</p>
+        <p className="text-xs font-medium text-ink-faint uppercase tracking-wide mb-1">Check result</p>
         <p className="text-sm text-ink-muted mono-num">{evidenceSource}</p>
       </div>
     </div>

@@ -49,6 +49,23 @@ class VerificationFirewallTests(unittest.TestCase):
         self.assertTrue(result.verified)
         self.assertEqual(result.action, "PASS")
 
+    def test_generic_patient_header_is_not_verified_as_evidence(self) -> None:
+        result = self.verify(
+            "Findings: Patient: RAM (ID: NS-10001), Male, DOB: 2011-06-07. MRI analysis identified two lesions.",
+            EvidenceBundle(lesion_count=2),
+        )
+        self.assertEqual(len(result.claims), 1)
+        self.assertEqual(result.claims[0].text, "MRI analysis identified two lesions")
+        self.assertEqual(result.claims[0].status, "SUPPORTED")
+
+    def test_mask_shape_uses_structured_evidence(self) -> None:
+        result = self.verify(
+            "The segmented lesion mask has a shape of [182, 218, 182].",
+            EvidenceBundle(shape=[182, 218, 182]),
+        )
+        self.assertTrue(result.verified)
+        self.assertEqual(result.claims[0].status, "SUPPORTED")
+
     def test_rag_claim_with_supporting_document(self) -> None:
         result = self.verify(
             "The MRI analysis detected four lesion candidates.",

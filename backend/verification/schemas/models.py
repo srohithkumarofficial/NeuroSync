@@ -20,6 +20,7 @@ class EvidenceBundle(BaseModel):
     lesion_count: int | None = None
     lesion_volume_ml: float | None = None
     lesion_voxels: int | None = None
+    shape: list[int] = Field(default_factory=list)
     modalities: list[str] = Field(default_factory=list)
     text_evidence: list[str] = Field(default_factory=list)
     trusted_documents: list[str] = Field(default_factory=list)

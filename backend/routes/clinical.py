@@ -11,7 +11,18 @@ def evidence(patient_id: str):
     mri = db.mri_results.find_one({"patient_id": patient_id})
     if not mri:
         return []
-    items = [{"id": f"mri-{patient_id}-count", "category": "mri", "statement": f"The MRI model identified {mri['lesion_count']} lesion regions."}, {"id": f"mri-{patient_id}-volume", "category": "mri", "statement": f"The MRI model measured a total lesion volume of {mri['lesion_volume_ml']} mL."}, {"id": f"mri-{patient_id}-voxels", "category": "mri", "statement": f"The segmentation mask contains {mri['lesion_voxels']} lesion voxels."}]
+    items = [
+        {"id": f"mri-{patient_id}-count", "category": "mri", "statement": f"Lesion count: {mri['lesion_count']} model-identified region(s)."},
+        {"id": f"mri-{patient_id}-volume", "category": "mri", "statement": f"Total lesion volume: {mri['lesion_volume_ml']} mL."},
+        {"id": f"mri-{patient_id}-voxels", "category": "mri", "statement": f"Lesion voxels: {mri['lesion_voxels']} voxels in the segmentation mask."},
+    ]
+    if mri.get("shape"):
+        items.append({"id": f"mri-{patient_id}-shape", "category": "mri", "statement": f"Mask shape: {mri['shape']}."})
+    report = db.reports.find_one({"$or": [{"scan_id": f"mri-{patient_id}"}, {"patient_id": patient_id}]}, sort=[("created_at", -1)])
+    if report:
+        for index, claim in enumerate(report.get("verification_claims", []), 1):
+            if claim.get("status") == "CONTRADICTED":
+                items.append({"id": f"conflict-{patient_id}-{index}", "category": "conflicting", "statement": claim.get("reason") or claim.get("text", "Report claim conflicts with MRI model output.")})
     return items
 
 
@@ -21,7 +32,23 @@ def evidence_claims(scan_id: str):
     if not report:
         return []
     status_map = {"SUPPORTED": "verified", "UNSUPPORTED": "unsupported", "CONTRADICTED": "blocked", "REQUIRES_REVIEW": "requires_review"}
-    return [{"id": claim.get("id", f"claim-{index}"), "statement": claim.get("text", ""), "evidenceSource": "; ".join(claim.get("evidence", [])) or claim.get("reason", "Verification firewall"), "status": status_map.get(claim.get("status", "UNSUPPORTED"), "unsupported")} for index, claim in enumerate(report.get("verification_claims", []), 1)]
+    claims = []
+    for index, claim in enumerate(report.get("verification_claims", []), 1):
+        claim_type = claim.get("type")
+        if claim_type == "general":
+            continue
+        reason = claim.get("reason", "")
+        evidence_source = "; ".join(claim.get("evidence", []))
+        check_result = reason if claim.get("status") in {"CONTRADICTED", "UNSUPPORTED"} else evidence_source
+        if reason and evidence_source and check_result != reason:
+            check_result = f"{check_result}; {reason}"
+        claims.append({
+            "id": claim.get("id", f"claim-{index}"),
+            "statement": claim.get("text", ""),
+            "evidenceSource": check_result or evidence_source or "Structured MRI evidence required",
+            "status": status_map.get(claim.get("status", "UNSUPPORTED"), "unsupported"),
+        })
+    return claims
 
 
 @router.post("/api/llm/explanation")
