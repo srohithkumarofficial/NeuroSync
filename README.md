@@ -87,8 +87,9 @@ npm install
 npm run dev
 ```
 
-Open the printed local URL (default `http://localhost:5173`). Sign in with any email/password — auth is mocked
-(see `src/services/authService.ts`).
+Open the printed local URL (default `http://localhost:5173`). Sign in with the clinician credentials configured in
+`backend/.env` (see `backend/README.md` for the required `DEFAULT_CLINICIAN_EMAIL` and
+`DEFAULT_CLINICIAN_PASSWORD` values).
 
 To type-check and build a production bundle:
 
@@ -108,9 +109,14 @@ python -m venv backend\.venv
 .\backend\.venv\Scripts\Activate.ps1
 pip install -r backend\requirements.txt
 Copy-Item backend\.env.example backend\.env
+# set DEFAULT_CLINICIAN_EMAIL and DEFAULT_CLINICIAN_PASSWORD in backend/.env
 python -m backend.seed.seed_data
 uvicorn backend.main:app --reload --port 8000
 ```
+
+Run those commands from the repository root. If your terminal is already in `backend`, use
+`python -m uvicorn backend.main:app --reload --app-dir .. --port 8000`; `uvicorn main:app` will fail because the
+backend imports use the `backend` package.
 
 Set `VITE_USE_MOCK_API=false` in the frontend `.env` to connect its login and cognitive-assessment service to
 `http://localhost:8000`. The existing MRI/patient mock services remain mock-backed because the requested backend
@@ -160,6 +166,8 @@ Copy `.env.example` to `.env` and fill in real values when connecting the backen
 | `VITE_USE_MOCK_API` | `true` while using mock services, `false` once real endpoints exist |
 | `VITE_MRI_STATUS_STREAM_URL` | WebSocket/SSE endpoint for live MRI processing status |
 | `VITE_ENABLE_SPINAL_MRI` | Feature flag reserved for future spinal MRI support (kept off — brain MRI only in this build) |
+| `DEFAULT_CLINICIAN_EMAIL` | Seeded clinical login email used by the FastAPI prototype auth flow |
+| `DEFAULT_CLINICIAN_PASSWORD` | Strong password stored as a PBKDF2 hash; keep it out of source control |
 
 ## 8. Deployment
 

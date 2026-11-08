@@ -18,7 +18,8 @@ class Database:
             self.db = self.client[settings.database_name]
             self.connected = True
             self._create_indexes()
-        except PyMongoError:
+        except PyMongoError as exc:
+            print(f"❌ MongoDB connection failed: {exc}")
             self.client = None
             self.db = None
             self.connected = False

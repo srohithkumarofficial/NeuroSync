@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     mongodb_uri: str = Field(default="mongodb://localhost:27017", validation_alias=AliasChoices("MONGODB_URI", "MONGO_URI"))
     database_name: str = "neurosync"
     frontend_url: str = "http://localhost:5173"
+    default_clinician_email: str = "demo@neurosync.local"
+    default_clinician_password: str = ""
     sarvam_api_key: str = ""
     sarvam_model: str = "sarvam-105b"
     sarvam_api_url: str = "https://api.sarvam.ai/v1/chat/completions"

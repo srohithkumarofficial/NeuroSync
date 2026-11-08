@@ -6,8 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 export function Login() {
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("arjunraj@gmail.com");
-  const [password, setPassword] = useState("arjunraj");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
 
   async function handleSubmit(e: React.FormEvent) {
